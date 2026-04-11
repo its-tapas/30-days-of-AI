@@ -1,0 +1,2 @@
+Day,Title,Status,Artifacts,Notes,Next
+Day 1,"What is an LLM + run one locally + first API call",,"day1/readme.md | day1/day1.txt | day1/app1/",,"Prompt control (system prompt, temperature, max tokens)"
