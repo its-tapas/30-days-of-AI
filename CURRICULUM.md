@@ -27,9 +27,9 @@ Planned total labs across 30 days: **79**.
 | 12 | LangChain tools + structured output integration | 2 | Lab 1: Structured output with Pydantic (validated results)<br>Lab 2: Tools integration with guardrails (allowed tools only) |
 | 13 | LangGraph basics: state + nodes + edges | 2 | Lab 1: Build a small graph (state → steps → result)<br>Lab 2: Add conditional routing and debug output |
 | 14 | LangGraph memory + checkpoints | 2 | Lab 1: Checkpoint state to disk<br>Lab 2: Resume from checkpoint (continue where you left off) |
-| 15 | Multi-step agent loop: plan → act → reflect (single agent) | 3 | Lab 1: Planner step (produce a short plan)<br>Lab 2: Act step (tool calls + results)<br>Lab 3: Reflect step (stop/continue + summary) |
-| 16 | Multi-agent intro: roles (planner/executor/reviewer) | 2 | Lab 1: Role prompts + handoff contract<br>Lab 2: Shared memory/state between roles |
-| 17 | Multi-agent coordination: shared state + handoffs | 3 | Lab 1: Shared state schema (what gets shared)<br>Lab 2: Handoff rules + conflict resolution<br>Lab 3: Router (send tasks to the right agent) |
+| 15 | Agentic architecture: plan → act → reflect (single agent) | 3 | Lab 1: Planner step (produce a short plan)<br>Lab 2: Act step (tool calls + results)<br>Lab 3: Reflect step (stop/continue + summary) |
+| 16 | AutoGen-style multi-agent roles: planner/executor/reviewer | 2 | Lab 1: AutoGen-style role prompts + handoff contract<br>Lab 2: Shared memory/state between roles |
+| 17 | CrewAI-style coordination: shared state + handoffs | 3 | Lab 1: Shared state schema (what gets shared)<br>Lab 2: Handoff rules + conflict resolution<br>Lab 3: Router (send tasks to the right agent) |
 | 18 | Constraints + safety: tool allowlists + sandboxing mindset | 2 | Lab 1: Tool allowlist + argument validation<br>Lab 2: Safe-mode behaviors (refuse unsafe actions) |
 | 19 | Local model selection: speed vs quality + quantization basics | 2 | Lab 1: Benchmark harness (latency + output sanity checks)<br>Lab 2: Model selection checklist + configuration presets |
 | 20 | Performance: caching + streaming UX + context window control | 3 | Lab 1: Simple caching (prompt/settings → cached answer)<br>Lab 2: Streaming UX for chat in CLI<br>Lab 3: Context control (trim + summarize strategy) |

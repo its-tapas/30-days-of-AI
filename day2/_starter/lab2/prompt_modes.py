@@ -10,7 +10,7 @@ PROMPT_MODES: dict[str, str] = {
 def get_system_prompt(mode: str) -> str:
     """Return the system prompt for a given mode.
 
-    TODO (HackerRank-style): write your code here.
+    TODO (Practical): write your code here.
 
     Rules:
     - mode lookup is case-insensitive

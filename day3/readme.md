@@ -2,7 +2,7 @@
 
 Time box: **2–3 hours**.
 
-Day 3 has **3 HackerRank-style labs**:
+Day 3 has **3 Practical labs**:
 
 - Lab 1: Maintain a multi-turn message history and build the Ollama `/api/chat` payload.
 - Lab 2: Save and load a chat session (messages) to a JSON file.

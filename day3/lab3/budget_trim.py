@@ -13,5 +13,5 @@ def trim_messages_by_chars(messages: list[Message], max_chars: int) -> list[Mess
     - If max_chars <= 0: keep only system messages
     - Always keep the most recent non-system message (even if it exceeds the budget)
     """
-    # TODO (HackerRank-style): write your code here.
+    # TODO (Practical): write your code here.
     raise NotImplementedError

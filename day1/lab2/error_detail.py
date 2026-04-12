@@ -6,7 +6,7 @@ from typing import Any
 def extract_error_detail(*, response_text: str, response_json: dict[str, Any] | None) -> str:
     """Extract a helpful error message from an HTTP error response.
 
-    TODO (HackerRank-style): write your code here.
+    TODO (Practical): write your code here.
 
     Rules:
     - If response_json contains a non-empty string in key 'error', return it.

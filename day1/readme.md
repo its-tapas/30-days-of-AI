@@ -2,7 +2,7 @@
 
 Time box: **2–3 hours**.
 
-Day 1 has **2 HackerRank-style labs**:
+Day 1 has **2 Practical labs**:
 
 - Lab 1: Build the HTTP URL + JSON payload pieces for a streaming `/api/generate` call.
 - Lab 2: Build a tiny error-detail helper (real-world backend habit).

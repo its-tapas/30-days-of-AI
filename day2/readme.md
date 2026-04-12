@@ -2,7 +2,7 @@
 
 Time box: **2–3 hours**.
 
-Day 2 has **2 HackerRank-style labs**:
+Day 2 has **2 Practical labs**:
 
 - Lab 1: Validate controls + build the Ollama request payload (`system`, `temperature`, `max-output-tokens`).
 - Lab 2: Implement “system prompt modes” (reusable presets).

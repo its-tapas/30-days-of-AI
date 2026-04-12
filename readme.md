@@ -17,7 +17,7 @@ Each day lives in its own folder:
 
 - `dayX/dayX.txt` → **copy/paste generator prompt** (run in another AI to regenerate `dayX/readme.md` + each `dayX/labN/problem_statement.md` + `dayX/labN/guide.md`)
 - `dayX/readme.md` → **the day plan + outcomes** (what to build, how to validate, continuity)
-- `dayX/lab1/`, `dayX/lab2/`, ... → **labs** (HackerRank-style: "write your code here")
+- `dayX/lab1/`, `dayX/lab2/`, ... → **labs** (Practical: "write your code here")
    - `problem_statement.md`
    - `guide.md`
    - lab files (starter code with TODOs)

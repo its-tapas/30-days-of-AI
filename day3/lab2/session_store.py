@@ -9,7 +9,7 @@ Message = dict[str, str]
 
 def save_session(path: str | Path, messages: list[Message]) -> None:
     """Save messages to a JSON file on disk."""
-    # TODO (HackerRank-style): write your code here.
+    # TODO (Practical): write your code here.
     raise NotImplementedError
 
 
@@ -20,7 +20,7 @@ def load_session(path: str | Path) -> list[Message]:
     - If file missing: return []
     - Validate shape; raise ValueError if invalid
     """
-    # TODO (HackerRank-style): write your code here.
+    # TODO (Practical): write your code here.
     raise NotImplementedError
 
 
