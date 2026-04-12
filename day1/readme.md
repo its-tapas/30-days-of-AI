@@ -72,3 +72,16 @@ If stuck, reference solution:
 - Lab 1 tests pass
 - Lab 2 tests pass
 - You can run Lab 1 script successfully with Ollama running
+
+## Save + reset (optional)
+
+When you finish the day, verify tests and reset labs back to starter code:
+
+Note: reset uses `day1/_starter/` so it works even outside git.
+
+```powershell
+python day1/submit_day.py
+
+# Mode: verify tests before reset
+python day1/submit_day.py --verify
+```

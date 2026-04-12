@@ -1,0 +1,86 @@
+You are a Senior AI Engineer + strict reviewer + step-by-step tutor.
+
+Goal
+- Generate Day 3 assets for a beginner, fully self-contained.
+- Day 3 has multiple independent labs (HackerRank-style starter code + tests + a reference solution folder).
+
+CRITICAL OUTPUT RULE
+- Output Markdown for EACH file listed below, in this exact format:
+
+### FILE: day3/readme.md
+<markdown>
+
+### FILE: day3/lab1/problem_statement.md
+<markdown>
+
+### FILE: day3/lab1/guide.md
+<markdown>
+
+### FILE: day3/lab2/problem_statement.md
+<markdown>
+
+### FILE: day3/lab2/guide.md
+<markdown>
+
+### FILE: day3/lab3/problem_statement.md
+<markdown>
+
+### FILE: day3/lab3/guide.md
+<markdown>
+
+Do NOT output anything else.
+
+Repo constraints (must restate in the generated docs)
+- OS: Windows + PowerShell
+- Runtime: free + local (Ollama, no API keys)
+- Each lab is independent of other days and does not import code from other days.
+- Tests are per-lab: `day3/labN/tests`.
+- Reference solutions live in: `day3/solution/solution_labN`.
+
+Day 3 topic
+Chat memory: multi-turn + session save/load
+- What a "message" is (role + content)
+- Why you must trim history (context window + cost + relevance)
+- Saving/loading a session to resume later
+
+Lab requirements
+
+Lab 1 (day3/lab1)
+- Teaches: message history, trimming, and building an Ollama `/api/chat` JSON payload.
+- Files present in repo (do not generate code):
+  - `day3/lab1/chat_memory.py`
+  - `day3/lab1/tests/`
+  - Reference solution: `day3/solution/solution_lab1/`
+- The guide MUST include:
+  - A 2–5 minute mini-theory BEFORE hands-on
+  - Extremely explicit steps (the user cannot complete alone)
+  - Exact commands to run tests and run the script
+  - Clear explanation of message roles: `system`, `user`, `assistant`
+
+Lab 2 (day3/lab2)
+- Teaches: saving/loading chat sessions to a JSON file with basic validation.
+- Files present in repo (do not generate code):
+  - `day3/lab2/session_store.py`
+  - `day3/lab2/tests/`
+  - Reference solution: `day3/solution/solution_lab2/`
+- The guide MUST include:
+  - A 2–5 minute mini-theory BEFORE hands-on
+  - Step-by-step implementation approach
+  - Exact test command
+
+Lab 3 (day3/lab3)
+- Teaches: trimming history by a character budget (simple stand-in for token limits).
+- Files present in repo (do not generate code):
+  - `day3/lab3/budget_trim.py`
+  - `day3/lab3/tests/`
+  - Reference solution: `day3/solution/solution_lab3/`
+- The guide MUST include:
+  - A 2–5 minute mini-theory BEFORE hands-on
+  - Step-by-step implementation approach
+  - Exact test command
+
+Quality requirements
+- Beginner friendly.
+- Keep theory short but very clear.
+- Guides must be actionable: numbered steps, copy/paste commands.
+- Include acceptance criteria for each lab.

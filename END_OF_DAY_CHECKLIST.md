@@ -33,7 +33,8 @@ This repo is day-wise:
 
 6) Save + reset workspace
 - Run:
-  - `./scripts/submit_day.ps1 -Day dayX -Name <your_name>`
+  - `python dayX/submit_day.py`
+  - Mode: `python dayX/submit_day.py --verify`
 - Verify:
   - each `dayX/labN/` is reset to the starter code
 
