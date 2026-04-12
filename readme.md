@@ -131,8 +131,16 @@ python -m pytest -q dayX/lab1/tests
    - Save + reset your workspace code using:
 
 ```powershell
-./scripts/submit_day.ps1 -Day dayX -Name <your_name>
+python dayX/submit_day.py
+
+# Mode: verify tests before reset
+python dayX/submit_day.py --verify
+
+# Mode: reset only specific labs
+python dayX/submit_day.py --labs lab1 lab2
 ```
+
+Note: reset uses `dayX/_starter/` snapshots, so it works even outside git.
 
    - This verifies each lab’s tests and then resets your lab folders back to the starter code.
 6) Update `tracker.csv`:

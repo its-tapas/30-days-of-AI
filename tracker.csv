@@ -1,3 +1,4 @@
-Day,Title,Status,Artifacts,Notes,Next
-Day 1,"Local LLM basics: Ollama + HTTP call + CLI",Done,"day1/readme.md | day1/day1.txt | day1/lab1/ | day1/lab2/ | day1/solution/ | day1/day1_notes.md | day1/day1_notes.txt",,"Prompt control + predictable outputs"
-Day 2,"Prompt control: system prompt, temperature, max tokens",,"day2/readme.md | day2/day2.txt | day2/lab1/ | day2/lab2/ | day2/solution/",,"Structured prompts + modes"
+Day,Title,Topics Learned,Subtopics,No. of Labs,"Lab No. & Names",Status
+Day 1,"Local LLM basics: Ollama + HTTP call + CLI","Ollama local runtime + first HTTP call","/api/generate; streaming JSON; base URL normalization; error detail extraction",2,"1 - URL + payload builders; 2 - Error detail helper",Done
+Day 2,"Prompt control: system prompt, temperature, max output tokens","Prompt control for predictable output","system prompt; temperature; num_predict; input validation; prompt modes",2,"1 - Build payload + validate controls; 2 - System prompt modes",Done
+Day 3,"Chat memory: multi-turn + session save/load","Chat sessions + persistence","messages array; trimming history; /api/chat payload; save/load JSON; char budget trimming",3,"1 - Chat payload + turn trimming; 2 - Session save/load; 3 - Char budget trimming",In Progress
