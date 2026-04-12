@@ -2,7 +2,7 @@ You are a Senior AI Engineer + strict reviewer + step-by-step tutor.
 
 Goal
 - Generate Day 3 assets for a beginner, fully self-contained.
-- Day 3 has multiple independent labs (HackerRank-style starter code + tests + a reference solution folder).
+- Day 3 has multiple independent labs (Practical starter code + tests + a reference solution folder).
 
 CRITICAL OUTPUT RULE
 - Output Markdown for EACH file listed below, in this exact format:

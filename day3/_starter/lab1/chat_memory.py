@@ -37,13 +37,13 @@ def trim_messages(messages: list[Message], max_turns: int) -> list[Message]:
       (a turn is 2 non-system messages: user + assistant)
     - If max_turns <= 0, keep only system message(s)
     """
-    # TODO (HackerRank-style): write your code here.
+    # TODO (Practical): write your code here.
     raise NotImplementedError
 
 
 def build_chat_payload(*, model: str, messages: list[Message], stream: bool = False) -> dict[str, Any]:
     """Build the JSON payload for a non-streaming /api/chat request."""
-    # TODO (HackerRank-style): write your code here.
+    # TODO (Practical): write your code here.
     # Requirements:
     # - Return a dict with keys: model, messages, stream
     # - model must be non-empty after strip, else raise ValueError
