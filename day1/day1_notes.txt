@@ -1,0 +1,175 @@
+DAY 1 NOTES — Local LLM + HTTP + Prompt Controls
+=================================================
+
+These notes are meant to be readable in ~10–15 minutes and used as a quick reference while coding.
+
+CONTENTS
+--------
+1) Cheat Sheet
+2) Key Terms
+3) Ollama Mental Model
+4) /api/generate Endpoint
+5) Streaming vs Non-streaming
+6) Prompt Controls
+7) Code Snippets
+8) Common Errors
+
+1) CHEAT SHEET
+--------------
+- Ollama default server: http://localhost:11434
+- Endpoint we use: POST /api/generate
+- Minimal request JSON:
+
+  { "model": "gemma2:2b", "prompt": "Hello", "stream": false }
+
+2) KEY TERMS
+------------
+- LLM (Large Language Model): a model that predicts the next token well enough to follow instructions.
+- Token: a chunk of text (not exactly a word). Output “length” is measured in tokens.
+- Training: creating a model from data (we are NOT doing this).
+- Inference: using an existing model to generate output (this is what we do all month).
+
+3) OLLAMA MENTAL MODEL
+----------------------
+Think of Ollama like a local backend service:
+
+  Your Python code → HTTP POST → Ollama server → JSON response → your code
+
+Ollama also provides a CLI (ollama run ...) which uses the same runtime.
+
+4) /API/GENERATE ENDPOINT
+-------------------------
+NON-STREAMING REQUEST/RESPONSE
+
+Request:
+  {
+    "model": "gemma2:2b",
+    "prompt": "Explain what an API is in 3 bullets",
+    "stream": false
+  }
+
+Response shape (simplified):
+  {
+    "response": "...the generated text...",
+    "done": true
+  }
+
+STREAMING RESPONSE (NDJSON)
+
+When stream=true, Ollama sends multiple JSON lines (NDJSON). Each line is a partial update.
+Example lines (simplified):
+  { "response": "APIs are ", "done": false }
+  { "response": "interfaces...", "done": false }
+  { "response": "", "done": true }
+
+5) STREAMING VS NON-STREAMING
+-----------------------------
+- Non-streaming (stream=false)
+  - Pro: easiest to use (one JSON response)
+  - Con: you see nothing until the full answer finishes (feels slow)
+
+- Streaming (stream=true)
+  - Pro: fast-first-token (feels like ollama run)
+  - Con: slightly more code (read line-by-line)
+
+In this repo:
+- generate_text() uses non-streaming and returns a full string.
+- The CLI uses streaming so you see output immediately.
+
+6) PROMPT CONTROLS
+------------------
+A) System prompt
+- High-priority instruction that sets rules and style.
+- Good system prompts are short, specific, and constraint-based.
+- Example:
+  "You are a concise tutor. Answer in exactly 3 bullets. No emojis."
+- Ollama JSON field: system
+
+B) Temperature
+- Controls randomness.
+- 0.0–0.3: consistent/deterministic (good for coding + step-by-step)
+- 0.7+: more varied/creative (good for brainstorming)
+- Ollama JSON field: options.temperature
+
+C) Max tokens
+- Caps how long the output can be.
+- If too low, the answer gets cut off.
+- Good starting range: 60–200.
+- Ollama JSON field: options.num_predict
+
+Quick mapping:
+- system prompt   -> system
+- temperature     -> options.temperature
+- max tokens      -> options.num_predict
+
+7) CODE SNIPPETS
+----------------
+A) Minimal Python call (non-streaming)
+
+  import requests
+
+  base_url = "http://localhost:11434"
+  url = f"{base_url}/api/generate"
+
+  payload = {
+      "model": "gemma2:2b",
+      "prompt": "Explain what an API is in 3 bullets",
+      "stream": False,
+  }
+
+  resp = requests.post(url, json=payload, timeout=60)
+  resp.raise_for_status()
+  print(resp.json()["response"])
+
+B) Python streaming (prints tokens immediately)
+
+  import json
+  import requests
+
+  base_url = "http://localhost:11434"
+  url = f"{base_url}/api/generate"
+
+  payload = {
+      "model": "gemma2:2b",
+      "prompt": "Explain what an API is in 3 bullets",
+      "stream": True,
+  }
+
+  with requests.post(url, json=payload, stream=True, timeout=60) as resp:
+      resp.raise_for_status()
+      for line in resp.iter_lines(decode_unicode=True):
+          if not line:
+              continue
+          event = json.loads(line)
+          print(event.get("response", ""), end="", flush=True)
+          if event.get("done") is True:
+              break
+
+  print()
+
+C) Use the repo client
+
+  import sys
+  sys.path.append("app")
+
+  from llm_client import generate_text
+
+  print(generate_text(
+      "Explain HTTP vs HTTPS",
+      system_prompt="Answer in exactly 4 bullets. Be concise."
+  ))
+
+8) COMMON ERRORS
+----------------
+- Ollama not running / connection refused
+  - Fix: start Ollama (or run `ollama serve`), then retry.
+
+- Model not found
+  - Fix: ollama pull <model>
+
+- 500: requires more system memory
+  - Fix: pick a smaller model (e.g., gemma2:2b, llama3.2:1b)
+
+- First call is slow
+  - Reason: cold start (loading weights)
+  - Fix: run one warm-up prompt
