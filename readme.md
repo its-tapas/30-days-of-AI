@@ -1,5 +1,7 @@
 # 30-Day AI Systems (Hands-on)
 
+Short Setup video to perform dayx lab : [Day 3 example](https://1drv.ms/v/c/824fda0edfeb763c/IQDaimhRjBh2R7DQbu_cAkqyAcvkiDovSxjfIPOtbVs4-8k?e=uQMJDA)
+
 This repo is a **30-day, 2-hours/day** execution track to transition from backend/cloud development into **building real AI/LLM systems**:
 
 - Chatbot foundations
