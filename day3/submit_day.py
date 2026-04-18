@@ -1,14 +1,54 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 _LAB_RE = re.compile(r"^lab\d+$")
 _IGNORE = shutil.ignore_patterns("__pycache__", ".pytest_cache", "*.pyc", "*.pyo")
+
+
+def _rmtree_onerror(func, path: str, exc_info) -> None:
+    """Best-effort handler for shutil.rmtree on Windows.
+
+    Common causes:
+    - Read-only files (needs chmod)
+    - Transient locks (AV / OneDrive sync / editor)
+    """
+    try:
+        os.chmod(path, stat.S_IWRITE)
+    except OSError:
+        pass
+
+    try:
+        func(path)
+    except OSError:
+        # If it still fails, rmtree will raise after returning.
+        pass
+
+
+def _rmtree_with_retries(path: Path, *, attempts: int = 8) -> None:
+    last_exc: BaseException | None = None
+    for i in range(attempts):
+        try:
+            shutil.rmtree(path, onerror=_rmtree_onerror)
+            return
+        except (PermissionError, OSError) as exc:
+            last_exc = exc
+            # Small backoff for transient file locks (OneDrive/AV/pytest).
+            time.sleep(0.15 * (i + 1))
+
+    raise RuntimeError(
+        "Reset failed: could not delete folder due to Windows file permissions/locks. "
+        "Close any running pytest/terminals/editors using the lab (and let OneDrive finish syncing), "
+        f"then retry. Path: {path}. Last error: {last_exc}"
+    )
 
 
 def _lab_sort_key(name: str) -> tuple[int, str]:
@@ -24,12 +64,24 @@ def _discover_labs(day_dir: Path) -> list[str]:
     return labs
 
 
+def _preferred_python_executable(repo_root: Path) -> str:
+    candidates = [
+        repo_root / ".venv" / "Scripts" / "python.exe",  # Windows venv
+        repo_root / ".venv" / "bin" / "python",  # POSIX venv
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+    return sys.executable
+
+
 def _run_pytest(day_dir: Path, lab_name: str) -> None:
     tests_dir = day_dir / lab_name / "tests"
     if not tests_dir.exists():
         raise RuntimeError(f"tests folder not found: {tests_dir}")
 
-    cmd = [sys.executable, "-m", "pytest", "-q", str(tests_dir)]
+    python_exe = _preferred_python_executable(day_dir.parent)
+    cmd = [python_exe, "-m", "pytest", "-q", str(tests_dir)]
     completed = subprocess.run(cmd, cwd=str(day_dir.parent))
     if completed.returncode != 0:
         raise RuntimeError(f"verification failed for {lab_name}")
@@ -43,7 +95,7 @@ def _reset_lab(day_dir: Path, starter_dir: Path, lab_name: str) -> None:
         raise RuntimeError(f"starter snapshot not found: {src}")
 
     if dst.exists():
-        shutil.rmtree(dst)
+        _rmtree_with_retries(dst)
 
     shutil.copytree(src, dst, ignore=_IGNORE)
 
