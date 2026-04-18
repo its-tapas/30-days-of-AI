@@ -1,185 +1,108 @@
-# Day 3 Notes — Chat Memory + Session Save/Load + Trimming
+Day 3 Notes — Chat Memory + Session Save/Load + Trimming
 
-## Abbreviations / technical terms
+Contents List
+1. Multi-Turn History (The “Long Memory”)
+2. Message Roles (The “Script Labels”)
+3. Context Window (The “Attention Limit”)
+4. Context Trimming (The “Memory Eraser”)
+5. Session Persistence (The “Save Game”)
+6. Schema Validation (The “Seatbelt”)
+7. Summarization (The “Compression”)
+8. Functions and meanings (Conceptual helpers)
 
-| Term | Meaning |
-|---|---|
-| Message | A small object like `{ "role": "user", "content": "..." }`. |
-| Role | Who said it: `system`, `user`, or `assistant`. |
-| Turn | One pair of messages: `user` + `assistant` (2 messages). |
-| Memory | Including prior messages on each request. |
-| Context window | The max history a model can consider (token-limited). |
-| Trimming | Dropping older messages to stay within a budget. |
-| Budget | A limit like max turns, max tokens, or max characters. |
-| Persistence | Saving session state to disk and loading it later. |
-| Schema validation | Checking loaded data has the expected shape and types. |
-| Summarization | Replacing old history with a short summary message. |
+1 — Multi-Turn History (The “Long Memory”)
+Definition: Sending the full list of prior chat messages to the model every time you ask a new question.
 
-## Topics (1-liners)
+Example:
+- Message 1 (user): “I like blue.”
+- Message 2 (user): “What is my favorite color?”
+- To answer Message 2, the request must include both Message 1 and Message 2.
 
-| Topic | One-liner |
-|---|---|
-| Messages array | Chat input is a list of `{role, content}` objects. |
-| System messages | Set rules/style once; keep them at the start. |
-| Turn trimming | Keep system + last N turns to prevent unlimited growth. |
-| Budget trimming | Keep recent messages under a size limit (tokens/chars). |
-| Session persistence | Save/load the message list to resume conversations. |
-| Validation | Treat disk input as untrusted; validate before using. |
-| Summary strategy | Summarize older context instead of fully dropping it. |
+Why do we need this?
+1. Models are stateless (they don’t remember between requests).
+2. The “history list” creates the illusion of a continuous conversation.
+3. It enables follow-ups, references, and corrections.
 
-## The practical chat mental model
+2 — Message Roles (The “Script Labels”)
+Definition: A label on each message that tells the model what that message represents.
 
-A chat model does not “remember your session” automatically.
+The roles:
+- System: “Boss” instructions (how to behave)
+- User: the human asking questions
+- Assistant: the model’s prior answers
 
-You provide memory by sending a message list every time:
+Example:
+- system: “You are a math teacher.”
+- user: “What is 2+2?”
+- assistant: “It is 4.”
 
-1) Start with optional system message(s)
-2) Append new user message
-3) (Optionally) trim or summarize old history
-4) Send `messages` to `/api/chat`
-5) Append assistant response back into `messages`
+Why do we need this?
+1. The model must distinguish rules from questions from prior answers.
+2. System rules should stay stable and high priority.
+3. Role labeling reduces prompt confusion.
 
-## `/api/chat` payload shape (conceptual)
+3 — Context Window (The “Attention Limit”)
+Definition: The maximum amount of text (tokens) the model can consider at once.
 
-A typical payload looks like:
+Example:
+- If the model can only consider N tokens, messages beyond that limit effectively can’t be used.
 
-```json
-{
-  "model": "gemma2:2b",
-  "messages": [
-    {"role": "system", "content": "Be concise"},
-    {"role": "user", "content": "What is an API?"}
-  ],
-  "stream": false
-}
-```
+Why do we need this?
+1. You cannot grow history forever.
+2. Performance and cost scale with how much you send.
+3. You must choose what information is most important to keep.
 
-## Trimming strategies (you need one)
+4 — Context Trimming (The “Memory Eraser”)
+Definition: Setting a limit on how much old history you include in each request.
 
-If you never trim, history grows forever.
+Example:
+- You decide to keep only the last 3 turns.
+- When you send the 4th turn, the oldest turn is dropped from the list.
 
-### Strategy A — Trim by turns
+Why do we need this?
+1. Space: you must fit within the context window.
+2. Speed: less history usually means faster responses.
+3. Focus: old topics can become noise when the conversation shifts.
 
-Meaning:
-- Keep system messages.
-- Keep only the last `max_turns` turns.
+5 — Session Persistence (The “Save Game”)
+Definition: Saving the message list to disk and loading it later so a conversation can resume.
 
-Turn math:
-- 1 turn ≈ 2 non-system messages
-- Keep last `max_turns * 2` non-system messages
+Example:
+- Save: write { "messages": [...] } to a JSON file.
+- Load: read JSON back into memory and continue appending messages.
 
-Edge cases:
-- If `max_turns <= 0`, keep only system messages.
+Why do we need this?
+1. You can resume after closing your terminal/editor.
+2. You can share a session file or archive it.
+3. It enables debugging (you can replay a session).
 
-### Strategy B — Trim by budget (tokens or characters)
+6 — Schema Validation (The “Seatbelt”)
+Definition: Verifying loaded/supplied data has the expected structure before using it.
 
-Meaning:
-- Keep system messages.
-- Keep as many recent messages as possible within a budget.
+Example:
+- Ensure messages is a list.
+- Ensure each message is an object with string role and string content.
 
-Important practical rule:
-- Always keep the **most recent** user message (and often the most recent assistant message) even if it exceeds the budget.
+Why do we need this?
+1. Files can be corrupted or edited manually.
+2. Validation prevents confusing runtime errors later.
+3. It improves security hygiene by treating disk input as untrusted.
 
-### Strategy C — Summarize old messages
+7 — Summarization (The “Compression”)
+Definition: Replacing older message history with a short summary message that preserves key facts.
 
-Meaning:
-- Replace older history with one “summary” system or assistant message.
+Example:
+- Replace 30 old messages with 1 summary: “Summary: user prefers blue; goal is to build a CLI chatbot.”
 
-Why it works:
-- Preserves important context while shrinking size.
+Why do we need this?
+1. Keeps important context without blowing the window.
+2. Retains long-term facts even when trimming aggressively.
+3. Helps the model stay on-topic across long conversations.
 
-## Session persistence (save/load)
-
-A session is just:
-- a version number
-- the message list
-
-Example file shape:
-
-```json
-{
-  "version": 1,
-  "messages": [
-    {"role": "system", "content": "Be concise"},
-    {"role": "user", "content": "hi"},
-    {"role": "assistant", "content": "hello"}
-  ]
-}
-```
-
-When you load:
-- If file missing → return empty list `[]`
-- If file exists → parse JSON → validate → return messages
-
-## Reusable helper functions (generic)
-
-### `build_chat_payload(*, model: str, messages: list[dict], stream: bool = False, options: dict | None = None) -> dict`
-
-Meaning:
-- Builds request JSON for a chat call.
-
-Key behaviors:
-- Validate `model` non-empty
-- Validate `messages` is a list
-- Include `options` only if non-empty
-
-### `trim_messages_by_turns(messages: list[dict], max_turns: int) -> list[dict]`
-
-Meaning:
-- Keeps system messages + the last N turns.
-
-Rules:
-- Split system vs non-system
-- If `max_turns <= 0`: return system messages only
-- Keep last `max_turns * 2` non-system messages
-
-### `trim_messages_by_chars(messages: list[dict], max_chars: int) -> list[dict]`
-
-Meaning:
-- Keeps system messages + as many recent messages as fit in a char budget.
-
-Rules:
-- If `max_chars <= 0`: system only
-- Walk from newest to oldest
-- Always keep the newest non-system message
-
-### `summarize_old_history(messages: list[dict]) -> dict`
-
-Meaning:
-- Converts older history into a compact summary message.
-
-Typical output:
-- `{ "role": "system", "content": "Summary: ..." }` or `{ "role": "assistant", "content": "Summary: ..." }`
-
-### `save_session(path, messages: list[dict], version: int = 1) -> None`
-
-Meaning:
-- Writes `{version, messages}` as UTF-8 JSON.
-
-Important details:
-- Create parent folder(s)
-- Consider atomic write (write temp file then rename) for reliability
-
-### `load_session(path) -> list[dict]`
-
-Meaning:
-- Reads JSON and returns messages.
-
-Rules:
-- Missing file: return `[]`
-- Invalid JSON/shape: raise `ValueError` with a clear message
-
-### `validate_messages(value) -> list[dict]`
-
-Meaning:
-- Enforces message schema:
-  - list of dicts
-  - each dict has string `role` and string `content`
-
-## Common pitfalls (and fixes)
-
-- Forgetting to append assistant replies back to memory: always append both sides.
-- Dropping system messages during trimming: preserve them.
-- Trimming too aggressively: keep at least the newest user message.
-- Loading corrupted sessions: validate shape before using.
-- Using char budgets as “exact token budgets”: treat char budgets as an approximation.
+8 — Functions and meanings (Conceptual helpers)
+- build_chat_payload(model, messages, stream=False, options=None): Build JSON body for chat request.
+- trim_messages_by_turns(messages, max_turns): Keep system + last N turns.
+- trim_messages_by_budget(messages, budget): Keep recent messages under a size limit.
+- summarize_old_history(messages): Replace old history with a compact summary message.
+- save_session(path, messages, version=1): Write session JSON to disk.
+- load_session(path): Read session JSON, validate, return messages.
