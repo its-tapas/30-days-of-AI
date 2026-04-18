@@ -1,87 +1,177 @@
-# Day 3 — Lab 1 Guide (step-by-step)
+# Day 3 — Lab 1 Guide (beginner, step-by-step)
 
-## Mini-theory (2–5 minutes)
+## Repo constraints (must follow)
 
-- A chat is a list of **messages**.
-- Each message has:
-  - `role`: who said it (`system`, `user`, `assistant`)
-  - `content`: the text
-- "Memory" is just **including previous messages** on every request.
-- If you never trim history, your request grows forever (slower, less relevant, can exceed context limits).
+- **OS:** Windows
+- **Shell:** PowerShell
+- **Runtime:** Free + local only (Ollama). **No API keys.**
+- **Independence:** This lab is independent; do **not** import code from other days.
+- **Tests:** `day3/lab1/tests`
+- **Reference solution:** `day3/solution/solution_lab1`
 
-## 0) Open the starter code
+## Mini-theory (2–5 minutes, then hands-on)
 
-File: `day3/lab1/chat_memory.py`
+### 1) Multi-turn chat memory is just “send the whole history”
+Every time you ask the model something, you send:
+- your **system** rules (optional)
+- the conversation **so far**
+- the new user message
 
-You’ll implement 2 TODO functions:
+That full history is what makes the model “remember”.
+
+### 2) Why trim history?
+If you never trim:
+- Requests get bigger and slower
+- Old messages become irrelevant noise
+- You can exceed a context window (a real LLM limit)
+
+So you trim to keep only the most recent turns.
+
+### 3) Message roles (you must understand these)
+- `system`: instructions/rules for the assistant (tone, constraints). Usually placed at the start.
+- `user`: the human’s message
+- `assistant`: the model’s reply
+
+## 0) Setup (PowerShell)
+
+From the repo root:
+
+1) (Optional) Allow activation scripts in this terminal session:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+```
+
+2) Activate your venv (if not already):
+```powershell
+& .\.venv\Scripts\Activate.ps1
+```
+
+3) Install deps (only if you haven’t):
+```powershell
+python -m pip install -r .\requirements.txt
+```
+
+## 1) Open the starter file
+
+Open `day3/lab1/chat_memory.py`.
+
+You will implement exactly these functions (they currently raise `NotImplementedError`):
 - `trim_messages(messages, max_turns)`
 - `build_chat_payload(model, messages, stream=False)`
 
-## 1) Implement TODO #1 — `trim_messages`
+Do not change the tests.
 
-Find:
-- `def trim_messages(messages: list[Message], max_turns: int) -> list[Message]:`
+## 2) Implement TODO #1 — `trim_messages(messages, max_turns)`
 
-Implement the rules exactly:
+Find this function:
+```python
+def trim_messages(messages: list[Message], max_turns: int) -> list[Message]:
+```
 
-1) Split messages into:
-   - **system** messages (role == `system`)
-   - **conversation** messages (role != `system`)
+### Goal
+Return a **new list** of messages that:
+- keeps all `system` messages
+- keeps only the last `max_turns` turns (turn = user+assistant = 2 non-system messages)
+- if `max_turns <= 0`, keeps only system messages
 
-2) Decide how many conversation messages to keep:
-   - `keep_n = max_turns * 2`
+### Step-by-step implementation approach
 
-3) If `max_turns <= 0`:
-   - return only the system messages
+1) Create a list of system messages:
+- system messages are those where `m.get("role") == "system"`
 
-4) Otherwise:
-   - keep only the **last** `keep_n` conversation messages
-   - return: `system_messages + kept_conversation_messages`
+2) Create a list of non-system messages:
+- everything that is not role `system`
 
-Important: return a **new list** (don’t mutate the input).
+3) Handle the “zero/negative turns” case first:
+- if `max_turns <= 0`, return `system_messages`
 
-## 2) Implement TODO #2 — `build_chat_payload`
+4) Compute how many non-system messages you’re allowed to keep:
+- `keep_n = max_turns * 2`
 
-Find:
-- `def build_chat_payload(...):`
+5) Keep only the last `keep_n` non-system messages:
+- in Python slicing: `non_system_messages[-keep_n:]`
 
-Implement:
-1) Strip `model` and validate it’s non-empty.
-   - If empty, raise `ValueError("model must be non-empty")`
-2) Return:
+6) Return:
+- `system_messages + kept_non_system`
 
+### Common beginner mistakes (avoid these)
+
+- Mutating the original list (safer to return a new list)
+- Forgetting that a “turn” is **2** messages
+- Dropping system messages (you must always keep them)
+
+## 3) Implement TODO #2 — `build_chat_payload(model, messages, stream=False)`
+
+Find this function:
+```python
+def build_chat_payload(*, model: str, messages: list[Message], stream: bool = False) -> dict[str, Any]:
+```
+
+### Goal
+Return a dict shaped like an Ollama `/api/chat` JSON payload:
 ```python
 {
-  "model": model,
-  "messages": messages,
-  "stream": stream,
+  "model": "...",
+  "messages": [...],
+  "stream": False,
 }
 ```
 
-## 3) Run tests (does NOT require Ollama)
+### Step-by-step
+
+1) Normalize and validate `model`:
+- `model = (model or "").strip()`
+- If `model` is empty after stripping: `raise ValueError(...)`
+
+2) Return the payload dict with keys exactly:
+- `model`
+- `messages`
+- `stream`
+
+## 4) Run unit tests (no Ollama required)
 
 From repo root:
-
 ```powershell
 python -m pytest -q day3/lab1/tests
 ```
 
-If tests fail, read the assertion message — it tells you what shape is expected.
+If a test fails:
+- Read the assertion message carefully (it tells you what shape/value was expected)
+- Re-check the rules in the docstring of the function you’re implementing
 
-## 4) Run the script (requires Ollama running)
+## 5) Optional: run the interactive chat (requires Ollama)
 
-Start Ollama (if needed):
-- `ollama serve`
+### 5.1 Start Ollama
+In a separate PowerShell window:
+```powershell
+ollama serve
+```
 
-Then run:
+If you don’t have a model yet:
+```powershell
+ollama pull gemma2:2b
+```
 
+### 5.2 Run the script
+From repo root:
 ```powershell
 python day3/lab1/chat_memory.py
 ```
 
-Try 3 turns, then type `exit`.
+Type 2–3 messages. Then type `exit`.
 
-## Acceptance criteria
+### Troubleshooting
 
-- All tests pass
-- Your chat keeps memory across turns (responses reflect earlier messages)
+- If you see “Ollama not reachable…”, confirm `ollama serve` is running.
+- If you want to override the model:
+```powershell
+$env:OLLAMA_MODEL="gemma2:2b"
+python day3/lab1/chat_memory.py
+```
+
+## Acceptance criteria (checklist)
+
+- `python -m pytest -q day3/lab1/tests` passes
+- (Optional) Interactive chat runs and keeps context across turns
+- You can explain what `system`, `user`, and `assistant` roles mean

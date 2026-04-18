@@ -1,59 +1,148 @@
-# Day 1 — Lab 1 Guide (step-by-step)
+# Day 1 — Lab 1 Guide (fully step-by-step)
 
-## Mini-theory (2–5 minutes)
-- Ollama runs a local HTTP server (default: `http://localhost:11434`).
-- Calling a model is just an HTTP `POST` to `/api/generate` with a JSON body.
-- Small helper functions make your code easier to test and easier to debug.
+## What you are building
 
-## 0) Pre-req
-- Install Ollama and pull a model (example):
-  - `ollama pull gemma2:2b`
+You will implement 3 tiny helper functions that make an Ollama HTTP call reliable:
 
-## 1) Open the starter code
-File: `day1/lab1/ollama_one_shot.py`
-
-You’ll see 3 TODO functions:
 - `normalize_base_url(base_url)`
 - `build_generate_url(base_url)`
 - `build_stream_payload(model, prompt)`
 
-## 2) Implement TODO #1 — normalize_base_url
-Requirements:
-- Strip whitespace
-- If empty after strip, use `DEFAULT_OLLAMA_BASE_URL`
-- Remove trailing `/`
+These are **pure helpers** (string/dict building). The tests do **not** require Ollama to be running.
 
-Tip: do it in 2 lines:
-1) `base_url = base_url.strip()`
-2) pick default if empty
-3) `rstrip('/')`
+## 0) Prerequisites (do this once)
 
-## 3) Implement TODO #2 — build_generate_url
-Requirement:
-- Use `normalize_base_url()`
-- Return: `<base>/api/generate`
+From the repo root (`git-practice/`) in PowerShell:
 
-## 4) Implement TODO #3 — build_stream_payload
-Requirements:
-- Return a `dict` with keys: `model`, `prompt`, `stream`
+1) (Optional) If PowerShell blocks activation scripts:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+```
+
+2) Activate the virtual environment:
+
+```powershell
+& .\.venv\Scripts\Activate.ps1
+```
+
+3) Install dependencies (only the first time):
+
+```powershell
+python -m pip install -r .\requirements.txt
+```
+
+4) (Optional, only for the demo run) Install Ollama and pull a model:
+
+```powershell
+ollama pull gemma2:2b
+```
+
+## 1) Open the file you must edit
+
+Open: `day1/lab1/ollama_one_shot.py`
+
+Scroll until you see these TODO functions raising `NotImplementedError`:
+
+- `normalize_base_url(base_url: str) -> str`
+- `build_generate_url(base_url: str) -> str`
+- `build_stream_payload(model: str, prompt: str) -> dict[str, Any]`
+
+Do not change the tests.
+
+## 2) Implement TODO #1 — `normalize_base_url(base_url)`
+
+Goal: return a base URL that is safe to join with an endpoint path.
+
+Exact requirements (in order):
+
+1) Remove whitespace:
+- Use `base_url.strip()`
+
+2) If the result is empty:
+- Return `DEFAULT_OLLAMA_BASE_URL`
+
+3) Remove trailing slashes:
+- Use `rstrip("/")`
+
+What to type (example implementation shape):
+
+```python
+base_url = base_url.strip()
+if not base_url:
+    base_url = DEFAULT_OLLAMA_BASE_URL
+return base_url.rstrip("/")
+```
+
+## 3) Implement TODO #2 — `build_generate_url(base_url)`
+
+Goal: return the full URL for Ollama’s generate endpoint.
+
+Exact steps:
+
+1) Call your helper:
+- `base = normalize_base_url(base_url)`
+
+2) Return the endpoint URL:
+- `f"{base}/api/generate"`
+
+## 4) Implement TODO #3 — `build_stream_payload(model, prompt)`
+
+Goal: build the request body for a streaming `/api/generate` call.
+
+Exact requirements:
+
+- Return a dictionary with keys exactly: `model`, `prompt`, `stream`
 - `stream` must be `True`
 
-## 5) Run tests (does NOT require Ollama)
+What to type:
+
+```python
+return {"model": model, "prompt": prompt, "stream": True}
+```
+
+## 5) Run the unit tests (no Ollama required)
+
 From repo root:
 
 ```powershell
 python -m pytest -q day1/lab1/tests
 ```
 
-## 6) Run the demo script (requires Ollama running)
-Start Ollama (if needed):
-- `ollama serve`
+Expected result:
+- You should see `...` and then `1 passed` (or similar) with exit code 0.
 
-Then run:
+## 6) Optional: run the demo script (requires Ollama)
+
+1) In a separate PowerShell window, start Ollama:
+
+```powershell
+ollama serve
+```
+
+2) From repo root, run the demo:
 
 ```powershell
 python day1/lab1/ollama_one_shot.py "Explain what an API is in 3 bullets"
 ```
 
+Expected result:
+- You should see streaming text printed to the console.
+
+## 7) Reset the lab back to starter (when you want a clean slate)
+
+From repo root:
+
+```powershell
+python day1/submit_day.py --labs lab1
+```
+
+## Troubleshooting (common issues)
+
+- If tests fail: open `day1/lab1/tests/test_builders.py` and compare expected strings to what your helper returns.
+- If the demo says Ollama not reachable: make sure `ollama serve` is running.
+- If you get a “model not found” error: run `ollama pull gemma2:2b`.
+
 ## If you get stuck
-- Check the reference solution in `day1/solution/solution_lab1/`.
+
+- Reference solution: `day1/solution/solution_lab1/`

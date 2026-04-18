@@ -1,130 +1,162 @@
-# Day 3 — Lab 2 Guide (beginner, step-by-step)
+# Day 3 — Lab 2 Guide (fully step-by-step)
 
-## Repo constraints (must follow)
+## What you are building
 
-- **OS:** Windows
-- **Shell:** PowerShell
-- **Runtime:** Free + local only (no API keys)
-- **Independence:** This lab is independent; do **not** import code from other days.
-- **Tests:** `day3/lab2/tests`
-- **Reference solution:** `day3/solution/solution_lab2`
+You will add **session persistence**: saving a chat history to disk and loading it back later.
 
-## Mini-theory (2–5 minutes, then hands-on)
+You will implement two functions in one file:
 
-### Why save/load?
-In Lab 1, your messages live in RAM. When the program exits, the conversation is gone.
+- `save_session(path, messages)`
+- `load_session(path)`
 
-Saving the session:
-- makes the chat resumable
-- makes debugging easier (you can inspect the JSON)
-- forces you to think about data shape and validation (a real-world skill)
-
-### Why validate?
-Files can be corrupted, edited manually, or written by older versions. Validation gives you predictable behavior:
-- good input → normal behavior
-- bad input → clear `ValueError` instead of random crashes later
+The lab also includes a helper `_validate_messages(...)` that you should reuse.
 
 ## 0) Setup (PowerShell)
 
 From the repo root:
 
-1) Activate your venv (if not already):
+1) (Optional) Allow activation scripts in this terminal session:
+
 ```powershell
-.\venv\Scripts\Activate.ps1
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 ```
 
-2) Install deps (only if you haven’t):
+2) Activate venv:
+
 ```powershell
-pip install -r .\requirements.txt
+& .\.venv\Scripts\Activate.ps1
 ```
 
-## 1) Open the starter file
+3) Install deps (first time only):
 
-Open `day3/lab2/session_store.py`.
+```powershell
+python -m pip install -r .\requirements.txt
+```
 
-You will implement:
+## 1) Open the file you must edit
+
+Open: `day3/lab2/session_store.py`
+
+Find the two functions that currently raise `NotImplementedError`:
+
 - `save_session(path, messages)`
 - `load_session(path)`
 
-Important: The file already contains `_validate_messages(value)` — you should use it.
+Do not change tests.
 
-## 2) Implement `save_session(path, messages)`
+## 2) Implement TODO #1 — `save_session(path, messages)`
 
-Find:
+Find this signature:
+
 ```python
 def save_session(path: str | Path, messages: list[Message]) -> None:
 ```
 
-### Step-by-step approach
+Implement it in this exact order:
 
-1) Convert `path` to a `Path`:
-- `path = Path(path)`
+1) Convert `path` into a `Path`:
 
-2) Ensure the parent directory exists:
-- `path.parent.mkdir(parents=True, exist_ok=True)`
-
-3) Build the object to write:
 ```python
-data = {
-    "version": 1,
-    "messages": messages,
-}
+path = Path(path)
 ```
 
-4) Convert to JSON and write UTF-8:
-- Use `json.dumps(...)` then `path.write_text(..., encoding="utf-8")`
+2) Ensure the parent directory exists (so writing won’t fail):
 
-Recommended (easy to read while debugging):
-- `ensure_ascii=False`
-- `indent=2`
+```python
+path.parent.mkdir(parents=True, exist_ok=True)
+```
 
-## 3) Implement `load_session(path)`
+3) Build a JSON-serializable object with this shape:
 
-Find:
+```python
+obj = {"version": 1, "messages": messages}
+```
+
+4) Convert it to JSON text:
+
+- Use `indent=2` so it’s readable
+- Use `ensure_ascii=False` so non-English characters don’t become `\uXXXX`
+
+```python
+text = json.dumps(obj, ensure_ascii=False, indent=2)
+```
+
+5) Write it as UTF-8:
+
+```python
+path.write_text(text, encoding="utf-8")
+```
+
+## 3) Implement TODO #2 — `load_session(path)`
+
+Find this signature:
+
 ```python
 def load_session(path: str | Path) -> list[Message]:
 ```
 
-### Step-by-step approach
+Implement it in this exact order:
 
-1) Convert to `Path`:
-- `path = Path(path)`
+1) Convert `path` into a `Path`.
 
-2) If missing, return empty list:
-- `if not path.exists(): return []`
+2) If the file does not exist:
 
-3) Read text + parse JSON:
-- `text = path.read_text(encoding="utf-8")`
-- `data = json.loads(text)`
+- return `[]`
 
-4) Extract the stored messages:
-- `messages_value = data.get("messages")` (after confirming `data` is a dict)
+3) If it exists:
 
-5) Validate using the provided helper:
-- `return _validate_messages(messages_value)`
+- read text as UTF-8
+- parse JSON using `json.loads`
 
-### What should raise `ValueError`?
-Anything that violates the expected shape, for example:
-- root JSON is not an object/dict
-- `messages` key missing or not a list
-- any message is not a dict
-- `role` missing/not a non-empty string
-- `content` missing/not a string
+4) Extract messages:
 
-(You don’t need to invent new rules — `_validate_messages` already defines them.)
+- The file should be a dict with a `"messages"` field
+- If the JSON top-level is not a dict, raise `ValueError`
 
-## 4) Run tests
+5) Validate messages using the provided helper:
+
+- call `_validate_messages(value)`
+- return its result
+
+What “validate” means:
+
+- `messages` must be a list
+- each item must be a dict with a non-empty `role` string and a `content` string
+
+If anything is invalid, raise `ValueError`.
+
+## 4) Run the unit tests
 
 From repo root:
+
 ```powershell
 python -m pytest -q day3/lab2/tests
 ```
 
-If a test fails, open `day3/lab2/tests/test_session_store.py` and read what it expects.
+Expected result:
+
+- All tests pass (exit code 0).
+
+## 5) Quick manual sanity check (optional)
+
+From repo root, run this one-liner:
+
+```powershell
+python -c "from day3.lab2.session_store import save_session, load_session; p='tmp/session.json'; save_session(p,[{'role':'user','content':'hi'},{'role':'assistant','content':'hello'}]); print(load_session(p))"
+```
+
+Expected result:
+
+- It prints a Python list of messages with `role` and `content`.
+
+## 6) Reset the lab back to starter (optional)
+
+```powershell
+python day3/submit_day.py --labs lab2
+```
 
 ## Acceptance criteria (checklist)
 
-- `python -m pytest -q day3/lab2/tests` passes
-- `load_session(...)` returns `[]` for missing file
-- Invalid shapes raise `ValueError` (not `KeyError`, not silent failure)
-- Saved JSON includes `version: 1` and `messages: [...]`
+- All tests pass
+- Missing file returns `[]`
+- Bad JSON shape raises `ValueError`

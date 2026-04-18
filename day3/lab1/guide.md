@@ -36,14 +36,20 @@ So you trim to keep only the most recent turns.
 
 From the repo root:
 
-1) Activate your venv (if not already):
+1) (Optional) Allow activation scripts in this terminal session:
+
 ```powershell
-.\venv\Scripts\Activate.ps1
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 ```
 
-2) Install deps (only if you haven’t):
+2) Activate your venv (if not already):
 ```powershell
-pip install -r .\requirements.txt
+& .\.venv\Scripts\Activate.ps1
+```
+
+3) Install deps (only if you haven’t):
+```powershell
+python -m pip install -r .\requirements.txt
 ```
 
 ## 1) Open the starter file
