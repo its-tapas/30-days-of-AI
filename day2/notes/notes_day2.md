@@ -1,159 +1,127 @@
-# Day 2 Notes — Prompt Control (system / temperature / max output)
+# Day 2 Notes — Prompt Control (System / Temperature / Max Output)
 
-## Abbreviations / technical terms
+## Contents List
 
-| Term | Meaning |
-|---|---|
-| System prompt | High-priority instruction that sets rules/style/constraints. |
-| User prompt | The task/question the user asks. |
-| Temperature | Randomness control (lower = more consistent). |
-| Sampling | How the model chooses next tokens (temperature/top_p/seed/etc.). |
-| `num_predict` | Ollama option that limits output length (similar to max output tokens). |
-| Stop sequence | A string that tells generation to stop when produced. |
-| Deterministic | Same input → same output (not always guaranteed, but closer at low temperature). |
-| Guardrails | Constraints you enforce (format, allowed actions, safety rules). |
-| Preset / mode | A named bundle of system prompt + settings (example: “teacher”). |
+1. [Prompt Layering (The “2-Layer Sandwich”)](#1--prompt-layering-the-2-layer-sandwich)
+2. [System Prompt (The “Boss Rules”)](#2--system-prompt-the-boss-rules)
+3. [Temperature (The “Randomness Dial”)](#3--temperature-the-randomness-dial)
+4. [Max Output / `num_predict` (The “Length Limit”)](#4--max-output--num_predict-the-length-limit)
+5. [Stop Sequences (The “Hard Brake”)](#5--stop-sequences-the-hard-brake)
+6. [Prompt Presets / Modes (The “Saved Settings”)](#6--prompt-presets--modes-the-saved-settings)
+7. [Input Validation (The “Range Checker”)](#7--input-validation-the-range-checker)
+8. [Functions and meanings (Conceptual helpers)](#8--functions-and-meanings-conceptual-helpers)
 
-## Topics (1-liners)
+## 1 — Prompt Layering (The “2-Layer Sandwich”)
 
-| Topic | One-liner |
-|---|---|
-| Prompt layering | System sets rules; user sets task; keep them separate. |
-| Output predictability | Lower temperature + clear constraints → more reliable outputs. |
-| Output length control | Use `num_predict` to avoid overly long or cut-off outputs. |
-| Prompt presets | Store reusable “modes” as a dict so behavior is consistent. |
-| Input validation | Fail fast on invalid controls (range/type checks). |
-| Format control | Ask for bullets/JSON and add stop sequences if needed. |
+Definition: Keeping “behavior rules” separate from “the task” by splitting instructions into a system layer and a user layer.
 
-## Prompt layering (the practical mental model)
+Example:
+- System: “Answer in 3 bullets. Be concise.”
+- User: “Explain retries in HTTP clients.”
 
-You typically have (at least) two instruction layers:
+Why do we need this?
+1. Consistency: the same rules apply to many tasks.
+2. Safety/guardrails: you can enforce constraints centrally.
+3. Clarity: you avoid mixing rules and questions into one confusing blob.
 
-1) **System prompt** (rules, style, boundaries)
-2) **User prompt** (the task)
+## 2 — System Prompt (The “Boss Rules”)
 
-Good practice:
-- System prompt: short and constraint-based
-- User prompt: specific task + required output format
+Definition: High-priority instructions that define how the assistant should behave (tone, format, constraints).
 
-Example system prompt:
+Example:
+- System: “If you are unsure, say you are unsure. No invented facts.”
 
-- “Answer in 3 bullets. No fluff. If unsure, say you’re unsure.”
+Why do we need this?
+1. It’s the most reliable place to enforce format (JSON-only, bullets-only, etc.).
+2. It keeps the assistant aligned to your expectations.
+3. It reduces “style drift” across multiple questions.
 
-Example user prompt:
+## 3 — Temperature (The “Randomness Dial”)
 
-- “Explain retries in HTTP clients.”
+Definition: A sampling control that changes how varied or predictable outputs are.
 
-## Temperature (what it really changes)
+Example:
+- Temperature 0.2: stable, repeatable-ish answers.
+- Temperature 0.9: more variety, more risk of wandering.
 
-Temperature changes how “random” the token sampling is.
+Why do we need this?
+1. Predictability: coding/checklist tasks usually want lower temperature.
+2. Creativity: brainstorming can benefit from higher temperature.
+3. Debugging: stable outputs make it easier to spot real issues.
 
-Practical guidance:
-- `0.0–0.3`: stable, good for coding steps and checklists
-- `0.4–0.7`: balanced
-- `0.8+`: creative/varied, but less consistent
+## 4 — Max Output / `num_predict` (The “Length Limit”)
 
-Important:
-- Low temperature does not magically make outputs correct.
-- It mainly makes outputs **more consistent**.
+Definition: A cap on how much the model is allowed to generate.
 
-## Output length (`num_predict` / max output tokens)
+Example:
+- You request “3 bullets” and set `num_predict` to something small-ish.
+- The model stops before producing a wall of text.
 
-Why you need it:
-- Too high: long, rambling answers
-- Too low: truncated answers
+Why do we need this?
+1. Prevents rambling.
+2. Controls latency (longer outputs often take longer).
+3. Helps CLI tools stay readable.
 
-Practical starting point:
-- 80–250 for short explanations
-- 300–800 for longer reasoning (still depends on model)
+## 5 — Stop Sequences (The “Hard Brake”)
 
-## Prompt presets (“modes”)
+Definition: A list of strings that, if generated, will cause generation to stop.
 
-A mode is a named preset that controls behavior.
+Example:
+- Stop sequence: `"\n\n"` to stop after one paragraph.
+- Stop sequence: `"}"` when you want a single JSON object (use carefully).
 
-Example mode registry (conceptual):
+Why do we need this?
+1. Enforces clean boundaries (especially for structured outputs).
+2. Prevents the assistant from adding extra commentary.
+3. Improves consistency when combined with strict formatting instructions.
 
-- `concise`: short bullets
-- `teacher`: step-by-step with a tiny example
-- `reviewer`: critique + risks + edge cases
+## 6 — Prompt Presets / Modes (The “Saved Settings”)
 
-Why modes help:
-- Consistent behavior
-- Less repetition
-- Easier to test and tune
+Definition: Named bundles of system prompts + options (temperature, max output, stop sequences).
 
-## Reusable helper functions (generic)
+Example:
+- `concise`: “3 bullets, short sentences” + low temperature
+- `teacher`: “step-by-step + tiny example” + medium temperature
 
-### `validate_temperature(value: float) -> None`
+Why do we need this?
+1. Consistent behavior across runs.
+2. Easier tuning: change one preset instead of many callers.
+3. Faster UX: users pick a mode instead of typing options every time.
 
-Meaning:
-- Ensures temperature is in an allowed range (commonly `[0.0, 1.0]`).
+## 7 — Input Validation (The “Range Checker”)
 
-Why:
-- Prevents accidental “garbage in” values.
+Definition: Checking that user-provided controls are valid before calling the model.
 
-### `validate_max_output_tokens(value: int) -> None`
+Example:
+- If temperature is `-1` or `"hot"`, raise a clean error instead of sending nonsense.
 
-Meaning:
-- Ensures output limit is positive.
+Why do we need this?
+1. Prevents confusing server errors.
+2. Makes bugs obvious and early.
+3. Makes your code easier to test.
 
-Why:
-- A zero/negative value is always a bug.
+## 8 — Functions and meanings (Conceptual helpers)
 
 ### `normalize_system_prompt(text: str) -> str`
 
-Meaning:
-- Cleans whitespace and returns a normalized string.
+Meaning: Cleans a system prompt (trim whitespace; decide a policy for empty strings).
 
-Typical rule:
-- `text.strip()`
+### `validate_temperature(value: float) -> None`
+
+Meaning: Enforces a valid temperature range (commonly `0.0` to `1.0`).
+
+### `validate_max_output_tokens(value: int) -> None`
+
+Meaning: Ensures max output is a positive integer.
 
 ### `build_options(*, temperature: float | None = None, num_predict: int | None = None, stop: list[str] | None = None) -> dict`
 
-Meaning:
-- Builds a clean `options` dict with only the keys you actually set.
-
-Why:
-- Avoid sending empty/invalid keys.
-
-### `build_generate_payload(*, model: str, prompt: str, system: str | None, options: dict, stream: bool = False) -> dict`
-
-Meaning:
-- Builds the request JSON for generation.
-
-Key behaviors:
-- Validate `model` non-empty
-- Include `system` only if non-empty
-- Include `options` only if non-empty
+Meaning: Builds an `options` dict with only the keys you set (no empty/invalid keys).
 
 ### `get_mode_preset(mode: str, presets: dict[str, dict]) -> dict`
 
-Meaning:
-- Returns preset config for a mode name.
+Meaning: Fetches the preset for a mode name or raises a clear “unknown mode” error.
 
-Rules:
-- Strip + lowercase mode
-- Raise a clear error if unknown
+### `build_generate_payload(*, model: str, prompt: str, system: str | None, options: dict | None = None, stream: bool = False) -> dict`
 
-## Example payload (conceptual)
-
-```json
-{
-  "model": "gemma2:2b",
-  "prompt": "Explain retries",
-  "system": "Answer in 3 bullets. Be concise.",
-  "stream": false,
-  "options": {
-    "temperature": 0.2,
-    "num_predict": 160
-  }
-}
-```
-
-## Common pitfalls (and fixes)
-
-- Overlong system prompts: keep them short and constraint-based.
-- Mixing task + rules in one string: separate system (rules) from user (task).
-- Temperature too high for “reliable” tasks: lower it.
-- Truncation: increase `num_predict` or tighten the requested format.
-- Empty system prompt key: omit it instead of sending `"system": ""`.
+Meaning: Builds a clean JSON request body for a generation call.

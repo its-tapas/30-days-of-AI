@@ -1,46 +1,61 @@
 # Day 1 Notes — Local LLM (Ollama) + First HTTP Call
 
-## Abbreviations / technical terms
+## Contents List
 
-| Term | Meaning |
-|---|---|
-| LLM | Large Language Model; generates output by predicting tokens. |
-| Ollama | Local model runtime that exposes an HTTP API (default: `http://localhost:11434`). |
-| Endpoint | A URL path that performs an action (example: `/api/generate`). |
-| HTTP | Request/response protocol using methods (GET/POST) + status codes (200/400/500). |
-| URL | The full address of a resource (`base_url` + `/path`). |
-| JSON | Text format for structured data used in request/response bodies. |
-| NDJSON | Newline-delimited JSON: one JSON object per line (common for streaming). |
-| Payload | The JSON object you send in the request body. |
-| Timeout | A hard limit for how long you wait for a response. |
-| env var | Environment variable (config without changing code). |
+1. [Local-first LLM (No API keys)](#1--local-first-llm-no-api-keys)
+2. [Base URL Hygiene (The “URL Cleaner”)](#2--base-url-hygiene-the-url-cleaner)
+3. [HTTP Endpoint Call (The “Request/Response Loop”)](#3--http-endpoint-call-the-requestresponse-loop)
+4. [Request Payload (The “Instruction Packet”)](#4--request-payload-the-instruction-packet)
+5. [Streaming vs Non-streaming (The “Live Feed”)](#5--streaming-vs-non-streaming-the-live-feed)
+6. [Timeouts (The “Hang Preventer”)](#6--timeouts-the-hang-preventer)
+7. [Error Detail Extraction (The “Translator”)](#7--error-detail-extraction-the-translator)
+8. [Functions and meanings (Conceptual helpers)](#8--functions-and-meanings-conceptual-helpers)
 
-## Topics (1-liners)
+## 1 — Local-first LLM (No API keys)
 
-| Topic | One-liner |
-|---|---|
-| Local-first LLM | Run models on your machine (no API keys). |
-| `/api/generate` | One-shot generation endpoint (prompt → text). |
-| Base URL hygiene | Strip whitespace, default safely, remove trailing `/`. |
-| Streaming vs non-streaming | Streaming returns NDJSON chunks; non-streaming returns one JSON object. |
-| Error handling | Always handle connection errors, timeouts, and non-200 HTTP responses. |
-| Observability basics | Print actionable errors; keep inputs/outputs easy to inspect. |
-| Reusable helpers | Small pure functions make code testable and reliable. |
+Definition: Running an LLM on your own computer and calling it like a local service (usually over HTTP).
 
-## Core mental model (how local LLM calls work)
+Example:
+- You start a local model server.
+- Your Python script sends an HTTP request to `http://localhost:11434/...`.
+- You get back generated text.
 
-Think of Ollama like a local backend server:
+Why do we need this?
+1. Privacy: prompts and documents can stay on your machine.
+2. Cost control: no paid API usage for basic practice.
+3. Reliability: works offline or with limited internet.
 
-- Your app builds a URL + payload
-- Your HTTP client sends `POST` JSON
-- Ollama returns JSON
-- Your app extracts text (or streams chunks)
+## 2 — Base URL Hygiene (The “URL Cleaner”)
 
-This is the same “shape” you’ll reuse all month.
+Definition: Cleaning and normalizing the server base address so every request builds a valid URL.
 
-## The `/api/generate` request/response shape
+Example:
+- User types ` http://localhost:11434/ ` (with spaces and a trailing slash).
+- Your program normalizes it to `http://localhost:11434`.
 
-### Minimal non-streaming request
+Why do we need this?
+1. Prevents broken URLs like `http://localhost:11434//api/generate`.
+2. Makes config flexible (env vars, CLI flags) without fragile string bugs.
+3. Avoids “it works on my machine” issues due to formatting differences.
+
+## 3 — HTTP Endpoint Call (The “Request/Response Loop”)
+
+Definition: Sending an HTTP request (usually `POST`) with JSON, then reading the JSON response.
+
+Example:
+- Request: `POST /api/generate` with a JSON body containing `model` and `prompt`.
+- Response: JSON containing generated text.
+
+Why do we need this?
+1. Every local LLM workflow boils down to “send request → parse response”.
+2. The same pattern applies to chat, embeddings, tools, etc.
+3. It gives you a stable interface regardless of model internals.
+
+## 4 — Request Payload (The “Instruction Packet”)
+
+Definition: The JSON object you send that specifies what you want the model to do.
+
+Example payload (conceptual):
 
 ```json
 {
@@ -50,74 +65,81 @@ This is the same “shape” you’ll reuse all month.
 }
 ```
 
-### Minimal non-streaming response (typical)
+Why do we need this?
+1. It standardizes inputs (model name, prompt, options).
+2. It’s easy to log/debug (copy/paste JSON).
+3. It’s easy to validate (missing/empty fields are common bugs).
+
+## 5 — Streaming vs Non-streaming (The “Live Feed”)
+
+Definition:
+- Non-streaming: the server returns one JSON response after finishing.
+- Streaming: the server sends many small JSON “events” as the model generates (often NDJSON).
+
+Example:
+- Streaming response events (simplified):
 
 ```json
-{
-  "response": "...text...",
-  "done": true
-}
-```
-
-### Streaming response (NDJSON)
-
-When `"stream": true`, the response body is multiple JSON lines. Each line can include:
-
-- `response`: the next text chunk
-- `done`: `false` until the final line
-- sometimes `error`
-
-Example lines (simplified):
-
-```json
-{ "response": "HTTP is ", "done": false }
-{ "response": "a protocol...", "done": false }
+{ "response": "Hello", "done": false }
+{ "response": " world", "done": false }
 { "response": "", "done": true }
 ```
 
-## Error handling patterns that actually matter
+Why do we need this?
+1. Better UX: users see text appear immediately.
+2. Lower perceived latency on longer answers.
+3. Enables progress indicators and early stopping.
 
-### 1) Always set timeouts
+## 6 — Timeouts (The “Hang Preventer”)
 
-- Without a timeout, a request can hang forever.
-- Use a single “human reasonable” value first (example: 60 seconds) before adding fancy retry logic.
+Definition: A limit on how long your HTTP client will wait for a response.
 
-### 2) Separate “network failures” from “HTTP failures”
+Example:
+- You set a 60-second timeout.
+- If the server is stuck, your code fails fast with a clear error.
 
-- Network failures: connection refused, DNS issues, timeouts.
-- HTTP failures: you got a response but status is not 200.
+Why do we need this?
+1. Prevents infinite hangs.
+2. Makes failure mode predictable.
+3. Helps you implement retries or fallback behavior safely.
 
-### 3) Extract a useful error message
+## 7 — Error Detail Extraction (The “Translator”)
 
-Many services return errors in different shapes:
-- JSON `{ "error": "..." }`
-- JSON `{ "message": "..." }`
-- plain text
+Definition: Converting “something went wrong” into a useful, human-readable message.
 
-So your client should try JSON first, then fall back to text.
+Example:
+- Sometimes errors are JSON: `{ "error": "model not found" }`.
+- Sometimes errors are plain text.
+- You attempt JSON parsing first, then fall back to raw text.
 
-## Reusable helper functions (generic, not repo-specific)
+Why do we need this?
+1. You can’t fix what you can’t understand.
+2. Good error messages reduce debugging time massively.
+3. Makes CLI tools feel professional and reliable.
 
-Below are common helpers you’ll reuse in any local-LLM client.
+## 8 — Functions and meanings (Conceptual helpers)
+
+These are generic “building block” helpers that make local-LLM code stable and testable.
 
 ### `normalize_base_url(base_url: str, default: str) -> str`
 
-Meaning:
-- Returns a usable base URL with no trailing `/`.
-
-Typical rules:
-- `strip()` whitespace
-- if empty: use `default`
-- remove trailing slash with `rstrip("/")`
+Meaning: Returns a clean base URL (trim whitespace, apply default if empty, remove trailing `/`).
 
 ### `build_url(base_url: str, path: str) -> str`
 
-Meaning:
-- Returns a correct URL even if inputs have extra slashes.
+Meaning: Joins base URL + endpoint path safely (guarantees exactly one `/` between them).
 
-Rules:
-- Normalize base
-- Ensure `path` starts with `/`
+### `build_generate_payload(*, model: str, prompt: str, stream: bool = False, options: dict | None = None) -> dict`
+
+Meaning: Builds the JSON body for a generation request and omits empty fields.
+
+### `iter_ndjson_events(response) -> "Iterator[dict]"`
+
+Meaning: Reads a streaming (NDJSON) response line-by-line and yields parsed event dicts.
+
+### `extract_error_detail(response_text: str, response_json: dict | None) -> str`
+
+Meaning: Produces one clean error string, preferring JSON fields like `error`/`message` when present.
 
 ### `build_generate_payload(*, model: str, prompt: str, stream: bool, system: str | None = None, options: dict | None = None) -> dict`
 

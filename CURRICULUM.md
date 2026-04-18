@@ -13,9 +13,9 @@ Planned total labs across 30 days: **79**.
 
 | Day | Title | Labs | Lab titles |
 |---:|---|---:|---|
-| 1 | Local LLM + first HTTP call (Ollama) | 2 | Lab 1: URL + payload builders (streaming `/api/generate`)<br>Lab 2: Error detail extraction helper |
-| 2 | Prompt control: system + temperature + max output tokens | 2 | Lab 1: Validate controls + build `/api/generate` payload<br>Lab 2: System prompt modes (presets) |
-| 3 | Chat memory: multi-turn + session save/load | 3 | Lab 1: `/api/chat` payload + turn-based trimming<br>Lab 2: Session save/load (JSON persistence)<br>Lab 3: Character-budget trimming |
+| 1 | Local LLM + first HTTP call (Ollama)<br>[Notes](day1/notes/notes_day1.md) | 2 | Lab 1: URL + payload builders (streaming `/api/generate`)<br>Lab 2: Error detail extraction helper |
+| 2 | Prompt control: system + temperature + max output tokens<br>[Notes](day2/notes/notes_day2.md) | 2 | Lab 1: Validate controls + build `/api/generate` payload<br>Lab 2: System prompt modes (presets) |
+| 3 | Chat memory: multi-turn + session save/load<br>[Notes](day3/notes/notes_day3.md) | 3 | Lab 1: `/api/chat` payload + turn-based trimming<br>Lab 2: Session save/load (JSON persistence)<br>Lab 3: Character-budget trimming |
 | 4 | Structured output: strict JSON schema | 3 | Lab 1: Parse JSON safely (strip fences, reject non-JSON)<br>Lab 2: Validate JSON shape (required keys + types)<br>Lab 3: Prompting for strict JSON (schema-first prompting) |
 | 5 | Tool calling basics: route intents to Python functions | 3 | Lab 1: Intent router (string → tool name)<br>Lab 2: Tool registry + dispatch (validated args)<br>Lab 3: End-to-end mini-agent loop (plan → call tool → respond) |
 | 6 | Tool reliability: validation + retries + safe fallbacks | 3 | Lab 1: Retry + backoff wrapper with timeout<br>Lab 2: Error classification (retryable vs fatal)<br>Lab 3: Safe fallback responses + structured error reporting |
