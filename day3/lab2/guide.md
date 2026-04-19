@@ -52,37 +52,40 @@ Find this signature:
 def save_session(path: str | Path, messages: list[Message]) -> None:
 ```
 
-Implement it in this exact order:
+Go into the function body and **delete** the line:
 
-1) Convert `path` into a `Path`:
+```python
+raise NotImplementedError
+```
 
+Then type these lines **in order**.
+
+Step 1 (convert `path` into a `Path`):
+Explanation: Converting early lets you use `.parent`, `.write_text()`, etc. consistently.
 ```python
 path = Path(path)
 ```
 
-2) Ensure the parent directory exists (so writing won’t fail):
-
+Step 2 (ensure the parent directory exists):
+Explanation: This prevents failures when the folder doesn’t exist yet (e.g., `tmp/session.json`).
 ```python
 path.parent.mkdir(parents=True, exist_ok=True)
 ```
 
-3) Build a JSON-serializable object with this shape:
-
+Step 3 (build the JSON object):
+Explanation: Wrapping messages in an object lets you add versioning without changing the file shape later.
 ```python
 obj = {"version": 1, "messages": messages}
 ```
 
-4) Convert it to JSON text:
-
-- Use `indent=2` so it’s readable
-- Use `ensure_ascii=False` so non-English characters don’t become `\uXXXX`
-
+Step 4 (serialize JSON; readable + keep unicode):
+Explanation: `indent=2` makes it readable, and `ensure_ascii=False` keeps unicode characters intact.
 ```python
 text = json.dumps(obj, ensure_ascii=False, indent=2)
 ```
 
-5) Write it as UTF-8:
-
+Step 5 (write as UTF-8):
+Explanation: UTF-8 is the standard encoding for JSON text files.
 ```python
 path.write_text(text, encoding="utf-8")
 ```
@@ -95,35 +98,67 @@ Find this signature:
 def load_session(path: str | Path) -> list[Message]:
 ```
 
-Implement it in this exact order:
+Go into the function body and **delete** the line:
 
-1) Convert `path` into a `Path`.
+```python
+raise NotImplementedError
+```
 
-2) If the file does not exist:
+Then type these lines **in order**.
 
-- return `[]`
+Step 1 (convert `path` into a `Path`):
+Explanation: Accept both strings and `Path` objects for convenience, then normalize.
+```python
+path = Path(path)
+```
 
-3) If it exists:
+Step 2 (missing file returns empty list):
+Explanation: If there’s nothing saved yet, we treat that as “no session”.
+```python
+if not path.exists():
+```
 
-- read text as UTF-8
-- parse JSON using `json.loads`
+Step 3 (return for missing file):
+Explanation: Returning `[]` is the simplest “no saved session yet” behavior.
+```python
+    return []
+```
 
-4) Extract messages:
+Step 4 (read file as UTF-8):
+Explanation: Read the entire JSON file into memory as text.
+```python
+text = path.read_text(encoding="utf-8")
+```
 
-- The file should be a dict with a `"messages"` field
-- If the JSON top-level is not a dict, raise `ValueError`
+Step 5 (parse JSON):
+Explanation: Convert JSON text into Python objects (dict/list/etc.).
+```python
+data = json.loads(text)
+```
 
-5) Validate messages using the provided helper:
+Step 6 (top-level must be a dict/object):
+Explanation: We expect a JSON object like `{ "version": 1, "messages": [...] }`.
+```python
+if not isinstance(data, dict):
+```
 
-- call `_validate_messages(value)`
-- return its result
+Step 7 (raise ValueError for invalid top-level):
+Explanation: A non-dict top-level JSON means the file is corrupted or not in our expected format.
+```python
+    raise ValueError("session file must contain a JSON object")
+```
 
-What “validate” means:
+Step 8 (extract `messages` field):
+Explanation: Pull out just the stored messages list.
+```python
+messages = data.get("messages")
+```
 
-- `messages` must be a list
-- each item must be a dict with a non-empty `role` string and a `content` string
-
-If anything is invalid, raise `ValueError`.
+Step 9 (validate using the provided helper and return):
+Explanation: `_validate_messages` enforces the required structure and raises `ValueError` on bad data.
+```python
+return _validate_messages(messages)
+```
 
 ## 4) Run the unit tests
 

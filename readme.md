@@ -144,7 +144,8 @@ python dayX/submit_day.py --labs lab1 lab2
 
 Note: reset uses `dayX/_starter/` snapshots, so it works even outside git.
 
-   - This verifies each lab’s tests and then resets your lab folders back to the starter code.
+   - This verifies each lab’s tests and then overwrites the lab’s editable starter files from `dayX/_starter/`.
+   - Reset does **not** touch guides/tests/problem statements.
 6) Update `tracker.csv`:
    - `Done` when you pass the day’s validation cases
    - `Blocked` if you hit a hard issue

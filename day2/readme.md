@@ -76,6 +76,9 @@ When you finish the day, verify tests and reset labs back to starter code:
 
 Note: reset uses `day2/_starter/` so it works even outside git.
 
+Reset overwrites only the lab’s editable starter code files from `day2/_starter/`.
+It does **not** modify guides/tests/problem statements.
+
 ```powershell
 python day2/submit_day.py
 

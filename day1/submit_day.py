@@ -94,17 +94,32 @@ def _reset_lab(day_dir: Path, starter_dir: Path, lab_name: str) -> None:
     if not src.exists():
         raise RuntimeError(f"starter snapshot not found: {src}")
 
-    if dst.exists():
-        _rmtree_with_retries(dst)
+    if not dst.exists():
+        raise RuntimeError(
+            f"lab folder not found: {dst}. "
+            "Reset only overwrites starter files; it does not recreate full lab folders."
+        )
 
-    shutil.copytree(src, dst, ignore=_IGNORE)
+    for src_path in src.rglob("*"):
+        if src_path.is_dir():
+            continue
+
+        rel = src_path.relative_to(src)
+        if any(part in {"__pycache__", ".pytest_cache"} for part in rel.parts):
+            continue
+        if src_path.suffix in {".pyc", ".pyo"}:
+            continue
+
+        dst_path = dst / rel
+        dst_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src_path, dst_path)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Reset this day's lab folders back to starter code. "
-            "Default: reset only (no tests)."
+            "Reset this day's labs back to starter code by overwriting editable starter files "
+            "from _starter/ into the lab folder."
         )
     )
     parser.add_argument(
