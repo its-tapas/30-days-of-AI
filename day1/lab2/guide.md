@@ -56,14 +56,64 @@ You must implement the rules in this exact priority order:
 3) Else:
 - return `response_text.strip()` (can be empty)
 
-What to do step-by-step:
+### What to type (line-by-line)
 
-1) If `response_json is None`, skip directly to step 3.
-2) Read `error = response_json.get("error")`.
-	- If it’s a `str` and `error.strip()` is not empty → return `error.strip()`.
-3) Read `message = response_json.get("message")`.
-	- If it’s a `str` and `message.strip()` is not empty → return `message.strip()`.
-4) Return `response_text.strip()`.
+In `error_detail.py`, go into `extract_error_detail(...)` and **delete** the line:
+
+```python
+raise NotImplementedError
+```
+
+Then type these lines **in order**.
+
+Step 1 (only read JSON keys if JSON exists):
+Explanation: If the server didn’t return JSON (or JSON parsing failed), `response_json` will be `None`.
+Explanation: In that case we skip straight to the plain-text fallback at the end.
+```python
+if response_json is not None:
+```
+
+Step 2 (read the `error` field):
+Explanation: Many APIs (including Ollama) put the best human-readable failure reason in an `error` field.
+```python
+    error = response_json.get("error")
+```
+
+Step 3 (if it’s a non-empty string, return it):
+Explanation: We only accept real strings, and we treat whitespace-only values as “empty”.
+```python
+    if isinstance(error, str) and error.strip():
+```
+
+Step 4 (return stripped error text):
+Explanation: Returning the stripped version keeps messages clean and avoids trailing newlines.
+```python
+        return error.strip()
+```
+
+Step 5 (read the `message` field):
+Explanation: Some APIs use `message` instead of `error`, so this is our second-best source.
+```python
+    message = response_json.get("message")
+```
+
+Step 6 (if it’s a non-empty string, return it):
+Explanation: Same rule: only non-empty strings count.
+```python
+    if isinstance(message, str) and message.strip():
+```
+
+Step 7 (return stripped message text):
+Explanation: At this point we know `message` is a useful string, so return the cleaned version.
+```python
+        return message.strip()
+```
+
+Step 8 (fallback to response body text):
+Explanation: If there was no useful JSON field, we fall back to raw response text (still stripped).
+```python
+return response_text.strip()
+```
 
 ## 3) Run the unit tests
 

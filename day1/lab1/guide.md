@@ -65,12 +65,26 @@ Exact requirements (in order):
 3) Remove trailing slashes:
 - Use `rstrip("/")`
 
-What to type (example implementation shape):
+### What to type (line-by-line)
+
+In `ollama_one_shot.py`, go into `normalize_base_url(...)` and **delete** the line:
 
 ```python
-base_url = base_url.strip()
-if not base_url:
-    base_url = DEFAULT_OLLAMA_BASE_URL
+raise NotImplementedError
+```
+
+Then type these lines **in order**.
+
+Step 1 (strip whitespace + default if empty):
+Explanation: This makes the function tolerant of environment variables like `"  "` or `None`.
+Explanation: If the user gives nothing usable, we fall back to the known-good local default.
+```python
+base_url = (base_url or "").strip() or DEFAULT_OLLAMA_BASE_URL
+```
+
+Step 2 (remove trailing slash and return):
+Explanation: Removing a trailing `/` prevents accidental double slashes when we append `/api/generate`.
+```python
 return base_url.rstrip("/")
 ```
 
@@ -78,13 +92,27 @@ return base_url.rstrip("/")
 
 Goal: return the full URL for Ollama’s generate endpoint.
 
-Exact steps:
+### What to type (line-by-line)
 
-1) Call your helper:
-- `base = normalize_base_url(base_url)`
+In `ollama_one_shot.py`, go into `build_generate_url(...)` and **delete** the line:
 
-2) Return the endpoint URL:
-- `f"{base}/api/generate"`
+```python
+raise NotImplementedError
+```
+
+Then type these lines **in order**.
+
+Step 1 (normalize first):
+Explanation: We reuse the previous helper so the URL-building logic is consistent everywhere.
+```python
+base = normalize_base_url(base_url)
+```
+
+Step 2 (append the endpoint and return):
+Explanation: This is the exact Ollama endpoint path we want to call.
+```python
+return f"{base}/api/generate"
+```
 
 ## 4) Implement TODO #3 — `build_stream_payload(model, prompt)`
 
@@ -95,8 +123,18 @@ Exact requirements:
 - Return a dictionary with keys exactly: `model`, `prompt`, `stream`
 - `stream` must be `True`
 
-What to type:
+### What to type (line-by-line)
 
+In `ollama_one_shot.py`, go into `build_stream_payload(...)` and **delete** the line:
+
+```python
+raise NotImplementedError
+```
+
+Then type this single line:
+
+Step 1 (return the required dict):
+Explanation: The tests expect these exact keys, and `stream=True` enables line-by-line streaming output.
 ```python
 return {"model": model, "prompt": prompt, "stream": True}
 ```

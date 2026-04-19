@@ -75,31 +75,63 @@ Return a **new list** of messages that:
 - keeps only the last `max_turns` turns (turn = user+assistant = 2 non-system messages)
 - if `max_turns <= 0`, keeps only system messages
 
-### Step-by-step implementation approach
+### What to type (line-by-line)
 
-1) Create a list of system messages:
-- system messages are those where `m.get("role") == "system"`
+In `chat_memory.py`, go into `trim_messages(...)` and **delete** the line:
 
-2) Create a list of non-system messages:
-- everything that is not role `system`
+```python
+raise NotImplementedError
+```
 
-3) Handle the “zero/negative turns” case first:
-- if `max_turns <= 0`, return `system_messages`
+Then type these lines **in order**.
 
-4) Compute how many non-system messages you’re allowed to keep:
-- `keep_n = max_turns * 2`
+Step 1 (collect all system messages):
+Explanation: System messages are “global rules” and must always be preserved.
+```python
+system_messages = [m for m in messages if m.get("role") == "system"]
+```
 
-5) Keep only the last `keep_n` non-system messages:
-- in Python slicing: `non_system_messages[-keep_n:]`
+Step 2 (collect all non-system messages):
+Explanation: A “turn” consists of user+assistant messages, so we only count non-system messages toward turns.
+```python
+non_system_messages = [m for m in messages if m.get("role") != "system"]
+```
 
-6) Return:
-- `system_messages + kept_non_system`
+Step 3 (edge case: keep only system messages when `max_turns <= 0`):
+Explanation: If `max_turns` is zero/negative, we keep conversation empty but still keep the system rules.
+```python
+if max_turns <= 0:
+```
+
+Step 4 (return early for the edge case):
+Explanation: Returning here avoids any slicing math and guarantees only system messages remain.
+```python
+    return system_messages
+```
+
+Step 5 (convert turns → number of non-system messages to keep):
+Explanation: 1 turn = 2 messages (user + assistant), so 2 turns = 4 messages.
+```python
+keep_n = max_turns * 2
+```
+
+Step 6 (slice to keep only the last `keep_n` non-system messages):
+Explanation: Negative slicing keeps the newest messages and drops the oldest ones first.
+```python
+kept_non_system = non_system_messages[-keep_n:]
+```
+
+Step 7 (return system + trimmed conversation):
+Explanation: The output order is: all system messages first, then the trimmed conversation.
+```python
+return system_messages + kept_non_system
+```
 
 ### Common beginner mistakes (avoid these)
 
-- Mutating the original list (safer to return a new list)
-- Forgetting that a “turn” is **2** messages
-- Dropping system messages (you must always keep them)
+- Explanation: Don’t mutate the input list; return a new list.
+- Explanation: One “turn” is **two** messages (user + assistant).
+- Explanation: Never drop system messages.
 
 ## 3) Implement TODO #2 — `build_chat_payload(model, messages, stream=False)`
 
@@ -118,16 +150,39 @@ Return a dict shaped like an Ollama `/api/chat` JSON payload:
 }
 ```
 
-### Step-by-step
+### What to type (line-by-line)
 
-1) Normalize and validate `model`:
-- `model = (model or "").strip()`
-- If `model` is empty after stripping: `raise ValueError(...)`
+In `chat_memory.py`, go into `build_chat_payload(...)` and **delete** the line:
 
-2) Return the payload dict with keys exactly:
-- `model`
-- `messages`
-- `stream`
+```python
+raise NotImplementedError
+```
+
+Then type these lines **in order**.
+
+Step 1 (strip and validate the model):
+Explanation: A model name is required. Stripping avoids failures caused by trailing spaces.
+```python
+model_clean = (model or "").strip()
+```
+
+Step 2 (reject empty model):
+Explanation: If it’s empty after stripping, we stop here with a clear error.
+```python
+if not model_clean:
+```
+
+Step 3 (raise ValueError for empty model):
+Explanation: This makes failures obvious and matches the test expectation (a `ValueError` for empty model).
+```python
+    raise ValueError("model must be non-empty")
+```
+
+Step 4 (return the payload dict):
+Explanation: This is the exact JSON shape Ollama `/api/chat` expects (and what the tests assert).
+```python
+return {"model": model_clean, "messages": messages, "stream": stream}
+```
 
 ## 4) Run unit tests (no Ollama required)
 

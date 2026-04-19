@@ -60,6 +60,29 @@ Exact requirements:
 
 This is the same concept as Day 1.
 
+### What to type (line-by-line)
+
+In `prompt_playground.py`, go into `normalize_base_url(...)` and **delete** the line:
+
+```python
+raise NotImplementedError
+```
+
+Then type these lines **in order**.
+
+Step 1 (strip + default if empty):
+Explanation: This handles inputs like `"  http://localhost:11434/  "` and normalizes them.
+Explanation: If the result is blank, we use `DEFAULT_OLLAMA_BASE_URL` so later code can rely on it.
+```python
+base_url = (base_url or "").strip() or DEFAULT_OLLAMA_BASE_URL
+```
+
+Step 2 (remove trailing slash and return):
+Explanation: We return a “base” URL without the trailing `/` so joining paths is predictable.
+```python
+return base_url.rstrip("/")
+```
+
 ## 3) Implement TODO #2 — `validate_controls(temperature, max_output_tokens)`
 
 Goal: reject invalid input **before** building the payload.
@@ -69,15 +92,39 @@ Exact rules:
 - `temperature` must be between `0.0` and `1.0` inclusive
 - `max_output_tokens` must be `> 0`
 
-What to do step-by-step:
+### What to type (line-by-line)
 
-1) If `temperature < 0.0` or `temperature > 1.0`:
-- raise `ValueError("temperature must be between 0.0 and 1.0")` (message can differ, but keep it clear)
+In `prompt_playground.py`, go into `validate_controls(...)` and **delete** the line:
 
-2) If `max_output_tokens <= 0`:
-- raise `ValueError("max_output_tokens must be > 0")`
+```python
+raise NotImplementedError
+```
 
-3) Otherwise return `None` (i.e., do nothing).
+Then type these lines **in order**.
+
+Step 1 (reject bad temperature range):
+Explanation: Temperature controls randomness. Values outside `[0.0, 1.0]` are invalid for this lab.
+```python
+if temperature < 0.0 or temperature > 1.0:
+```
+
+Step 2 (raise ValueError for temperature):
+Explanation: Raise early so you fail fast before building/sending a payload.
+```python
+    raise ValueError("temperature must be between 0.0 and 1.0")
+```
+
+Step 3 (reject non-positive max tokens):
+Explanation: `max_output_tokens` is your hard cap; `0` or negative doesn’t make sense.
+```python
+if max_output_tokens <= 0:
+```
+
+Step 4 (raise ValueError for max tokens):
+Explanation: This enforces the lab rule that max output tokens must be positive.
+```python
+    raise ValueError("max_output_tokens must be > 0")
+```
 
 ## 4) Implement TODO #3 — `build_generate_payload(...)`
 
@@ -98,16 +145,45 @@ Exact payload requirements:
 - `system_clean = system.strip()`
 - If `system_clean` is empty, omit the key entirely (do not send `"system": ""`).
 
-Example shape:
+### What to type (line-by-line)
+
+In `prompt_playground.py`, go into `build_generate_payload(...)` and **delete** the line:
 
 ```python
-{
-  "model": "gemma2:2b",
-  "prompt": "Explain retries",
-  "stream": False,
-  "system": "Answer in 3 bullets.",  # only if non-empty
-  "options": {"temperature": 0.2, "num_predict": 160},
-}
+raise NotImplementedError
+```
+
+Then type these lines **in order**.
+
+Step 1 (build the required payload shape in one dict):
+Explanation: This matches the Ollama `/api/generate` JSON shape the tests expect.
+Explanation: `stream` must be `False` here, and the control values go under `options`.
+```python
+payload = {"model": model, "prompt": prompt, "stream": False, "options": {"temperature": temperature, "num_predict": max_output_tokens}}
+```
+
+Step 2 (strip system text):
+Explanation: We treat whitespace-only system prompts as “not provided”.
+```python
+system_clean = (system or "").strip()
+```
+
+Step 3 (only include system when non-empty):
+Explanation: Omitting `system` entirely is different from sending an empty string, and the tests want omission.
+```python
+if system_clean:
+```
+
+Step 4 (set the system field):
+Explanation: This adds the system prompt only when it is meaningful.
+```python
+    payload["system"] = system_clean
+```
+
+Step 5 (return the payload):
+Explanation: Return the dict you built.
+```python
+return payload
 ```
 
 ## 5) Run the unit tests (no Ollama required)

@@ -57,41 +57,129 @@ Find:
 def trim_messages_by_chars(messages: list[Message], max_chars: int) -> list[Message]:
 ```
 
-### Step-by-step algorithm (matches the tests)
+### What to type (line-by-line)
 
-1) Split messages into two lists:
-- `system_messages`: all messages where `role == "system"`
-- `conversation`: all messages where `role != "system"`
+In `budget_trim.py`, go to the TODO function and **delete** the line:
 
-2) Handle the edge case first:
-- If `max_chars <= 0`, return `system_messages`
+```python
+raise NotImplementedError
+```
 
-3) Now decide which conversation messages to keep:
-- Start from the **end** of `conversation` (newest → oldest)
-- Maintain `total_chars = 0`
-- Maintain `kept_reversed = []` (because you’re walking backwards)
+Then type the following lines **in order**.
 
-4) Always keep the newest non-system message:
-- Take the last element of `conversation`, append it to `kept_reversed`
-- Add its `len(content)` to `total_chars`
-- (Even if this exceeds `max_chars`, you keep it anyway — this is required.)
+Step 1 (keep all `system` messages):
+Explanation: System messages are global rules/instructions; we always keep them and do not count them in the budget.
+```python
+system_messages = [m for m in messages if m.get("role") == "system"]
+```
 
-5) For each remaining message (moving backwards):
-- Compute `message_chars = len(message["content"])`
-- Only keep it if `total_chars + message_chars <= max_chars`
-- If you keep it, add to `kept_reversed` and increase `total_chars`
+Step 2 (collect the non-system conversation messages):
+Explanation: Only `user` and `assistant` messages compete for the character budget.
+```python
+conversation = [m for m in messages if m.get("role") != "system"]
+```
 
-6) Reverse back to restore original order:
-- `kept = list(reversed(kept_reversed))`
+Step 3 (edge case: zero/negative budget keeps only system messages):
+Explanation: A non-positive budget means “keep no conversation”.
+```python
+if max_chars <= 0:
+```
 
-7) Return the final trimmed list:
-- `system_messages + kept`
+Step 4 (return early for the edge case):
+Explanation: We return immediately because no conversation messages are allowed under this budget.
+```python
+    return system_messages
+```
+
+Step 5 (edge case: no conversation messages):
+Explanation: If there are no non-system messages, the answer is just the system messages.
+```python
+if not conversation:
+```
+
+Step 6 (return system-only when conversation is empty):
+Explanation: With no conversation messages, there is nothing to budget-trim.
+```python
+    return system_messages
+```
+
+Step 7 (running total of kept conversation character count):
+Explanation: We track the total characters of the kept non-system messages.
+```python
+total_chars = 0
+```
+
+Step 8 (build the kept messages while walking backwards):
+Explanation: We will scan from newest to oldest, so we temporarily store kept messages in reverse order.
+```python
+kept_reversed: list[Message] = []
+```
+
+Step 9 (always keep the newest non-system message):
+Explanation: The rules require we keep the newest message even if it alone exceeds the budget.
+```python
+newest = conversation[-1]
+```
+
+Step 10 (append newest to kept list):
+Explanation: This begins the kept set with the most recent message.
+```python
+kept_reversed.append(newest)
+```
+
+Step 11 (add its length to the budget counter):
+Explanation: We count characters using `len(content)`; missing content counts as 0.
+```python
+total_chars += len(newest.get("content", ""))
+```
+
+Step 12 (iterate older messages from newest→oldest):
+Explanation: Now we consider older messages one by one, keeping them only if they still fit.
+```python
+for message in reversed(conversation[:-1]):
+```
+
+Step 13 (compute this message’s character cost):
+Explanation: This is the “price” of keeping this message in the conversation history.
+```python
+    message_chars = len(message.get("content", ""))
+```
+
+Step 14 (only keep it if it fits in the remaining budget):
+Explanation: We keep a message only if adding it would not exceed `max_chars`.
+```python
+    if total_chars + message_chars <= max_chars:
+```
+
+Step 15 (keep the message):
+Explanation: This message fits, so we include it.
+```python
+        kept_reversed.append(message)
+```
+
+Step 16 (update the running total):
+Explanation: Update the running character count after keeping it.
+```python
+        total_chars += message_chars
+```
+
+Step 17 (reverse back to restore original order):
+Explanation: We built the list backwards; reversing restores chronological order.
+```python
+kept = list(reversed(kept_reversed))
+```
+
+Step 18 (return system + trimmed conversation):
+Explanation: Final output preserves system messages and includes as many recent messages as allowed.
+```python
+return system_messages + kept
+```
 
 ### Common beginner mistakes (avoid these)
 
-- Counting characters for system messages (don’t; system messages are always kept)
-- Trimming from the front (you must keep the most recent messages)
-- Dropping the newest message when the budget is tiny (tests require keeping it)
+- Explanation: Don’t count characters for system messages.
+- Explanation: Trim from the end (keep the newest messages), not from the front.
+- Explanation: Always keep the newest non-system message, even if it exceeds `max_chars`.
 
 ## 3) Run tests
 

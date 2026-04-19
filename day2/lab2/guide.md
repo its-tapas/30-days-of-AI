@@ -44,9 +44,9 @@ At the top of the file you will see something like:
 
 ```python
 PROMPT_MODES = {
-	"concise": "...",
-	"teacher": "...",
-	"reviewer": "...",
+    "concise": "...",
+    "teacher": "...",
+    "reviewer": "...",
 }
 ```
 
@@ -54,26 +54,37 @@ The keys are the valid modes.
 
 ## 3) Implement `get_system_prompt(mode)`
 
-Follow these rules exactly:
-
-1) Normalize the input:
-
-- `mode_clean = mode.strip().lower()`
-
-2) Look up the normalized key in `PROMPT_MODES`.
-
-3) If it exists:
-
-- return the corresponding string
-
-4) If it does not exist:
-
-- raise `ValueError` (with a helpful message)
-
-Suggested error message (any clear message is fine):
+In `prompt_modes.py`, go into `get_system_prompt(...)` and **delete** the line:
 
 ```python
-raise ValueError(f"Unknown mode: {mode!r}")
+raise NotImplementedError
+```
+
+Then type these lines **in order**.
+
+Step 1 (strip + lowercase to make it case-insensitive):
+Explanation: Users may type modes with extra spaces or different casing.
+Explanation: Normalizing once keeps the rest of the function simple and predictable.
+```python
+mode_clean = (mode or "").strip().lower()
+```
+
+Step 2 (unknown mode should raise ValueError):
+Explanation: We check membership first so we can raise a clear error instead of letting a `KeyError` happen.
+```python
+if mode_clean not in PROMPT_MODES:
+```
+
+Step 3 (raise ValueError with a helpful message):
+Explanation: This message includes the original user input (before normalization) to aid debugging.
+```python
+    raise ValueError(f"Unknown mode: {mode!r}")
+```
+
+Step 4 (return the prompt for a known mode):
+Explanation: If the mode exists, return the stored system prompt string.
+```python
+return PROMPT_MODES[mode_clean]
 ```
 
 ## 4) Run the unit tests
