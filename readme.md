@@ -1,4 +1,4 @@
-# 30-Day AI Systems (Hands-on)
+# 30-Day AI Systems (Handss-on)
 
 Short Setup video to perform dayx lab : [Day 3 example](https://1drv.ms/v/c/824fda0edfeb763c/IQDaimhRjBh2R7DQbu_cAkqyAcvkiDovSxjfIPOtbVs4-8k?e=uQMJDA)
 
